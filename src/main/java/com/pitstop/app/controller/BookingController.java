@@ -29,7 +29,7 @@ public class BookingController {
         String bookingId = null;
         try {
             bookingId = bookingService.requestBooking(requestBooking.getWorkShopUserId(),
-                    requestBooking.getAmount(), requestBooking.getVehicleId());
+                    requestBooking.getServiceType(), requestBooking.getVehicleId());
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
