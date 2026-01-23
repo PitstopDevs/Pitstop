@@ -3,6 +3,7 @@ package com.pitstop.app.service.impl;
 import com.pitstop.app.constants.VehicleType;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
+import com.pitstop.app.dto.PricingRuleResponse;
 import com.pitstop.app.dto.WorkshopUserFilterRequest;
 import com.pitstop.app.dto.WorkshopUserFilterResponse;
 import com.pitstop.app.exception.ResourceNotFoundException;
@@ -28,6 +29,7 @@ public class WorkshopSearchServiceImpl implements WorkshopSearchService {
 
     private final AppUserRepository appUserRepository;
     private final WorkshopUserRepository workshopUserRepository;
+    private final AdminPricingServiceImpl adminPricingService;
 
     @Override
     public List<WorkshopUserFilterResponse> filterWorkshopUsers(WorkshopUserFilterRequest workshopUserRequest) {
@@ -108,6 +110,11 @@ public class WorkshopSearchServiceImpl implements WorkshopSearchService {
                 response.setFormattedAddress(workshopUser.getWorkshopAddress().getFormattedAddress());
                 response.setLatitude(workshopUser.getWorkshopAddress().getLatitude());
                 response.setLongitude(workshopUser.getWorkshopAddress().getLongitude());
+                PricingRuleResponse pricingRuleByVehicleTypeAndServiceType = adminPricingService.getPricingRuleByVehicleTypeAndServiceType(requestedVehicleType, requestedServiceType);
+                if(workshopUser.isPremiumWorkshop())
+                    response.setPrice(pricingRuleByVehicleTypeAndServiceType.getAmount() + pricingRuleByVehicleTypeAndServiceType.getPremiumAmount());
+                else
+                    response.setPrice(pricingRuleByVehicleTypeAndServiceType.getAmount());
 
                 result.add(response);
             }

@@ -16,4 +16,5 @@ public class WorkshopUserFilterResponse {
     private String formattedAddress;
     private Double latitude;
     private Double longitude;
+    private Double price;
 }
