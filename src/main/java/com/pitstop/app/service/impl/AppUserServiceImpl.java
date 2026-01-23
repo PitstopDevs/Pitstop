@@ -416,7 +416,7 @@ public class AppUserServiceImpl implements AppUserService {
                 log.info("Returning Estimated Price");
                 return GetPriceResponse.builder()
                         .baseAmount(baseAmount)
-                        .premiumAmount(0.0)
+                        .premiumAmount(pricingRule.getPremiumAmount())
                         .finalAmount(baseAmount)
                         .premiumApplied(false)
                         .message("Estimated Base Price")
