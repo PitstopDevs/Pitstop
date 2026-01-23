@@ -144,4 +144,32 @@ public class AdminPricingServiceImpl implements AdminPricingService {
             throw new RuntimeException("Failed to find all pricing rules", e);
         }
     }
+
+    @Override
+    public PricingRuleResponse getPricingRuleByVehicleTypeAndServiceType(VehicleType vehicleType, WorkshopServiceType serviceType) {
+        log.info("Getting pricing rule for {} and {}", vehicleType.toString(), serviceType.toString());
+        try {
+            // Scanning for the specific vehicleType & serviceType Combination
+            PricingRule pricingRule = pricingRuleRepository.findByVehicleTypeAndServiceType(vehicleType, serviceType)
+                    .orElseThrow(() -> new RuntimeException("Pricing rule not found"));
+
+            // Returning the Pricing Rule
+            return PricingRuleResponse.builder()
+                    .id(pricingRule.getId())
+                    .vehicleType(pricingRule.getVehicleType())
+                    .workshopServiceType(pricingRule.getServiceType())
+                    .amount(pricingRule.getAmount())
+                    .premiumAmount(pricingRule.getPremiumAmount())
+                    .createdDate(pricingRule.getCreatedDate())
+                    .updatedDate(pricingRule.getLastModifiedDate())
+                    .build();
+        }
+        catch (Exception e) {
+            // Specific vehicleType & serviceType Combination not found
+            log.warn("No Pricing Rule found for requested combination of Vehicle Type :: {} and Service Type :: {}", vehicleType.toString(), serviceType.toString());
+            log.warn("Returning default pricing rule values for Vehicle Type :: {} and Service Type :: {}", vehicleType.toString(), serviceType.toString());
+
+            return new PricingRuleResponse("default", vehicleType, serviceType, 499.00, 199.00, LocalDateTime.now(), LocalDateTime.now());
+        }
+    }
 }
