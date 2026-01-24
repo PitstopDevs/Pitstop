@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 @Builder
 @Getter
 @Setter
+@AllArgsConstructor
 public class PricingRuleResponse {
     private String id;
     private VehicleType vehicleType;

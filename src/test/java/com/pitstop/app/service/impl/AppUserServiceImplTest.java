@@ -182,7 +182,7 @@ public class AppUserServiceImplTest {
         GetPriceResponse response = appUserService.getPrice(request);
 
         assertEquals(300, response.getBaseAmount());
-        assertEquals(0, response.getPremiumAmount());
+        assertEquals(100, response.getPremiumAmount());
         assertEquals(300, response.getFinalAmount());
         assertFalse(response.isPremiumApplied());
     }

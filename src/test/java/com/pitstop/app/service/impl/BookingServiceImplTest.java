@@ -2,6 +2,7 @@ package com.pitstop.app.service.impl;
 
 import com.pitstop.app.constants.BookingStatus;
 import com.pitstop.app.constants.PaymentStatus;
+import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.dto.*;
 import com.pitstop.app.model.AppUser;
 import com.pitstop.app.model.Booking;
@@ -117,7 +118,7 @@ public class BookingServiceImplTest {
         AddVehicleResponse addVehicleResponse = vehicleService.addFourWheeler(new AddVehicleRequest("Honda", "Civic", 1700));
         vehicleId = addVehicleResponse.getVehicleId();
 
-        bookingId = bookingService.requestBooking(workshopUser.getId(), 1000, vehicleId);
+        bookingId = bookingService.requestBooking(workshopUser.getId(), WorkshopServiceType.TYRE_REPLACEMENT, vehicleId);
         assertNotNull(bookingId); // Check booking_id is created
 
         // Check booking exists in the repo
@@ -136,7 +137,7 @@ public class BookingServiceImplTest {
 
         BookingResponse b = bookingService.checkBookingStatus(bookingId);
         assertEquals(BookingStatus.STARTED, b.getCurrentStatus());
-        assertEquals(1000, b.getAmount());
+        assertEquals(400, b.getAmount());
         assertEquals("Civic", b.getVehicleDetails().getModel());
         assertNotNull(b.getBookingStartedTime());
 

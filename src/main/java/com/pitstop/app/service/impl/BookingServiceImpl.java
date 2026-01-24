@@ -2,6 +2,7 @@ package com.pitstop.app.service.impl;
 
 import com.pitstop.app.constants.BookingStatus;
 import com.pitstop.app.constants.PaymentStatus;
+import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
 import com.pitstop.app.dto.*;
 import com.pitstop.app.model.*;
@@ -31,6 +32,7 @@ public class BookingServiceImpl implements BookingService {
     private final WorkshopUserRepository workshopUserRepository;
     private final OTPService otpService;
     private final VehicleRepository vehicleRepository;
+    private final AdminPricingServiceImpl adminPricingService;
 
     @Override
     public Booking saveBookingDetails(Booking booking) {
@@ -69,7 +71,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     public String requestBooking(String workShopUserId,
-                               double amount, String vehicleId) {
+                                 WorkshopServiceType serviceType, String vehicleId) {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -97,6 +99,12 @@ public class BookingServiceImpl implements BookingService {
             log.error("Requested Vehicle ID not found. Vehicle id :: {}", vehicleId);
             throw new RuntimeException("Requested Vehicle ID not found.");
         }
+
+        PricingRuleResponse priceRule = adminPricingService.getPricingRuleByVehicleTypeAndServiceType(v.get().getVehicleType(), serviceType);
+
+        double amount = priceRule.getAmount();
+        if(workshopUser.isPremiumWorkshop())
+            amount += priceRule.getPremiumAmount();
 
         Booking booking = bookingRepository.save(new Booking(amount, v.get(), currentAppUser.getId()));
 
