@@ -1,6 +1,7 @@
 package com.pitstop.app.controller;
 
 import com.pitstop.app.dto.*;
+import com.pitstop.app.model.Address;
 import com.pitstop.app.service.VehicleService;
 import com.pitstop.app.service.impl.AppUserServiceImpl;
 import com.pitstop.app.service.impl.BookingHistoryServiceImpl;
@@ -33,12 +34,18 @@ public class AppUserController {
     6. (DELETE) Delete account
      */
 
-    @PutMapping("/add-address")
-    public ResponseEntity<String> addAddress(@RequestBody AddressRequest address){
-        return new ResponseEntity<>(appUserService.addAddress(address),HttpStatus.OK);
+    @PostMapping("/add-address")
+    public ResponseEntity<AddressResponse> addAddress(@RequestBody AddressRequest address) {
+        AddressResponse response = appUserService.addAddress(address);
+        return ResponseEntity.ok(response);
+    }
+    @GetMapping("/savedAddress")
+    public ResponseEntity<List<AddressResponse>> getSavedAddress(){
+        List<AddressResponse> responses = appUserService.getSavedAddress();
+        return new ResponseEntity<>(responses,HttpStatus.OK);
     }
     @PutMapping("/change-default-address")
-    public ResponseEntity<String> changeDefaultAddress(@RequestBody AddressRequest addressRequest) {
+    public ResponseEntity<String> changeDefaultAddress(@RequestBody ChangeAddressRequest addressRequest) {
         return new ResponseEntity<>(appUserService.changeDefaultAddress(addressRequest),HttpStatus.OK);
     }
 

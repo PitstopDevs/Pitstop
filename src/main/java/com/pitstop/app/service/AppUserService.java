@@ -11,9 +11,9 @@ public interface AppUserService {
     AppUser getAppUserById(String id);
     AppUser getAppUserByUsername(String username);
     List<AppUser> getAllAppUser();
-    String addAddress(AddressRequest address);
+    AddressResponse addAddress(AddressRequest address);
 
-    String changeDefaultAddress(AddressRequest addressRequest);
+    String changeDefaultAddress(ChangeAddressRequest addressRequest);
 
     String updateAppUser(AppUserRequest appUserRequest);
 
@@ -26,4 +26,6 @@ public interface AppUserService {
     PersonalInfoResponse getPersonalProfile();
 
     GetPriceResponse getPrice(GetPriceRequest request);
+
+    List<AddressResponse> getSavedAddress();
 }
