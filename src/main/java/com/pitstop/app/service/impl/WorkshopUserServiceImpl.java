@@ -21,7 +21,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -32,7 +31,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -318,22 +316,20 @@ public class WorkshopUserServiceImpl implements WorkshopService {
     }
 
     @Override
-    public ResponseEntity<?> changePassword(WorkshopUserRequest workshopUserRequest) {
+    public void changePassword(ChangePasswordRequest workshopUserRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         WorkshopUser currentWorkshopUser = workshopUserRepository.findByUsername(username)
                 .orElseThrow(()-> new ResourceNotFoundException("Workshop not found"));
 
-        String oldPassword = currentWorkshopUser.getPassword();
-        String newPassword = workshopUserRequest.getPassword();
-        if(newPassword.equals(oldPassword)) {
-            return new ResponseEntity<>("Change Password cannot be same", HttpStatusCode.valueOf(500));
+        if(!passwordEncoder.matches(workshopUserRequest.getCurrentPassword(),currentWorkshopUser.getPassword())) {
+            throw new IllegalArgumentException("Current password does not match");
         }
-
-        currentWorkshopUser.setPassword(newPassword);
-        currentWorkshopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateWorkshopUserDetails(currentWorkshopUser);
-        return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
+        if(passwordEncoder.matches(workshopUserRequest.getNewPassword(),currentWorkshopUser.getPassword())) {
+            throw new IllegalArgumentException("New password and current password cannot be same");
+        }
+        currentWorkshopUser.setPassword(workshopUserRequest.getNewPassword());
+        workshopUserRepository.save(currentWorkshopUser);
     }
 
     @Override

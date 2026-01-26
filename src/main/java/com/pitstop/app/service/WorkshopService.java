@@ -19,7 +19,7 @@ public interface WorkshopService {
 
     String updateWorkshopUser(WorkshopUserRequest workshopUserRequest);
 
-    ResponseEntity<?> changePassword(WorkshopUserRequest workshopUserRequest);
+    void changePassword(ChangePasswordRequest workshopUserRequest);
 
     ResponseEntity<?> deleteAppUser();
 

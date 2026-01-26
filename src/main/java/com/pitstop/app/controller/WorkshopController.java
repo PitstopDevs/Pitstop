@@ -10,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/workshops")
 @RequiredArgsConstructor
@@ -69,8 +71,11 @@ public class WorkshopController {
          return new ResponseEntity<>(workshopService.updateWorkshopUser(workshopUserRequest),HttpStatus.OK);
      }
     @PutMapping("/me/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody WorkshopUserRequest workshopUserRequest) {
-        return new ResponseEntity<>(workshopService.changePassword(workshopUserRequest),HttpStatus.OK);
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest changePasswordRequest) {
+        workshopService.changePassword(changePasswordRequest);
+        return ResponseEntity.ok(
+                Map.of("message","Password changed successfully")
+        );
     }
     @DeleteMapping("/me/delete")
     public ResponseEntity<?> deleteAppUserDetails() {
