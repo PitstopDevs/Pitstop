@@ -348,23 +348,21 @@ public class AppUserServiceImpl implements AppUserService {
         return appUserResponse;
     }
     @Override
-    public ResponseEntity<?> changePassword(AppUserRequest appUserRequest) {
+    public void changePassword(ChangePasswordRequest changePasswordRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
         AppUser currentAppUser = appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        String oldPassword = currentAppUser.getPassword();
-        String newPassword = appUserRequest.getPassword();
-        if(newPassword.equals(oldPassword)) {
-            return new ResponseEntity<>("Change Password cannot be same", HttpStatusCode.valueOf(500));
+        if(!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(),currentAppUser.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
         }
-
-        currentAppUser.setPassword(newPassword);
-        currentAppUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateAppUserDetails(currentAppUser);
-        return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
+        if(passwordEncoder.matches(changePasswordRequest.getNewPassword(),currentAppUser.getPassword())){
+            throw new IllegalArgumentException("New password must be different");
+        }
+        currentAppUser.setPassword(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        appUserRepository.save(currentAppUser);
     }
 
     @Override

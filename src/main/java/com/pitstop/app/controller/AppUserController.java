@@ -6,6 +6,7 @@ import com.pitstop.app.service.VehicleService;
 import com.pitstop.app.service.impl.AppUserServiceImpl;
 import com.pitstop.app.service.impl.BookingHistoryServiceImpl;
 import com.pitstop.app.service.impl.VehicleServiceImpl;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 @RestController
@@ -63,8 +65,11 @@ public class AppUserController {
         return new ResponseEntity<>(appUserService.updateAppUser(appUserRequest),HttpStatus.OK);
     }
     @PutMapping("/me/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody AppUserRequest appUserRequest) {
-        return new ResponseEntity<>(appUserService.changePassword(appUserRequest),HttpStatus.OK);
+    public ResponseEntity<?> changePassword(@RequestBody @Valid ChangePasswordRequest changePasswordRequest) {
+        appUserService.changePassword(changePasswordRequest);
+        return ResponseEntity.ok(
+                Map.of("message","Password changed successfully")
+        );
     }
     @DeleteMapping("/me/delete")
     public ResponseEntity<?> deleteAppUserDetails() {

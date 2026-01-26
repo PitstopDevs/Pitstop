@@ -19,7 +19,7 @@ public interface AppUserService {
 
     AppUserResponse getAppUserDetails();
 
-    ResponseEntity<?> changePassword(AppUserRequest appUserRequest);
+    void changePassword(ChangePasswordRequest changePasswordRequest);
 
     ResponseEntity<?>  deleteAppUser();
 
