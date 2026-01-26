@@ -29,6 +29,14 @@ public class WorkshopController {
         WorkshopStatusResponse response = workshopService.openWorkshop(username);
         return ResponseEntity.ok(response);
     }
+    @GetMapping("/getCurrentStatus")
+    public ResponseEntity<WorkshopStatusResponse> getCurrentStatus(){
+        return ResponseEntity.ok(workshopService.getWorkshopCurrentStatus());
+    }
+    @PostMapping("/setCloseWorkshop")
+    public ResponseEntity<WorkshopStatusResponse> closeWorkshop() {
+        return ResponseEntity.ok(workshopService.closeWorkshop());
+    }
 
      /*
     Create Secured endpoints / API for the below functionality:

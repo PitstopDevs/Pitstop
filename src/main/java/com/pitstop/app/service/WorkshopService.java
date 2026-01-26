@@ -31,4 +31,8 @@ public interface WorkshopService {
     void deleteWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleTypeRequest);
     List<WorkshopServiceType> getAllWorkshopServiceType();
     VehicleType getWorkshopSupportedVehicleType();
+
+    WorkshopStatusResponse getWorkshopCurrentStatus();
+
+    WorkshopStatusResponse closeWorkshop();
 }

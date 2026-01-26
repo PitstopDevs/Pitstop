@@ -144,9 +144,11 @@ public class WorkshopUserServiceImpl implements WorkshopService {
         WorkshopUser workshopUser = workshopUserRepository.findByUsername(username)
                 .orElseThrow(()-> new ResourceNotFoundException("Workshop not found with username : "+username));
 
+        log.info("Attempting to open workshop : {}",username);
         workshopUser.setCurrentWorkshopStatus(WorkshopStatus.OPEN);
         updateWorkshopUserDetails(workshopUser);
 
+        log.info("Workshop : {} , opened successfully",username);
         return new WorkshopStatusResponse(workshopUser.getId(), workshopUser.getName(),
                 workshopUser.getUsername(),workshopUser.getCurrentWorkshopStatus(), workshopUser.getWorkshopAddress());
     }
@@ -509,5 +511,39 @@ public class WorkshopUserServiceImpl implements WorkshopService {
             log.error("Unexpected error while fetching workshop vehicle type: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch workshop vehicle type");
         }
+    }
+
+    @Override
+    public WorkshopStatusResponse getWorkshopCurrentStatus() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return new WorkshopStatusResponse(
+                currentWorkShopUser.getId(),
+                currentWorkShopUser.getName(),
+                currentWorkShopUser.getUsername(),
+                currentWorkShopUser.getCurrentWorkshopStatus(),
+                currentWorkShopUser.getWorkshopAddress()
+        );
+    }
+
+    @Override
+    public WorkshopStatusResponse closeWorkshop() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        log.info("Attempting to close workshop : {}",username);
+        currentWorkShopUser.setCurrentWorkshopStatus(WorkshopStatus.CLOSED);
+        workshopUserRepository.save(currentWorkShopUser);
+
+        log.info("Workshop : {} , closed successfully",username);
+        return new WorkshopStatusResponse(currentWorkShopUser.getId(), currentWorkShopUser.getName(),
+                currentWorkShopUser.getUsername(),currentWorkShopUser.getCurrentWorkshopStatus(), currentWorkShopUser.getWorkshopAddress());
     }
 }
