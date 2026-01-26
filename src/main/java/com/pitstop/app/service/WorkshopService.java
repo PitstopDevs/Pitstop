@@ -13,7 +13,7 @@ public interface WorkshopService {
     WorkshopUser getWorkshopUserById(String id);
     List<WorkshopUser> getAllWorkshopUser();
 
-    String addAddress(AddressRequest address);
+    AddressResponse addAddress(AddressRequest address);
 
     WorkshopUserResponse getWorkshopUserDetails();
 
@@ -35,4 +35,6 @@ public interface WorkshopService {
     WorkshopStatusResponse getWorkshopCurrentStatus();
 
     WorkshopStatusResponse closeWorkshop();
+
+    WorkshopAddressResponse getAddress();
 }

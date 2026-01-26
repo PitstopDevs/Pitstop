@@ -47,8 +47,12 @@ public class WorkshopController {
     5. (DELETE) Delete account
      */
      @PutMapping("/update-address")
-     public ResponseEntity<String> addAddress(@RequestBody AddressRequest address){
+     public ResponseEntity<AddressResponse> addAddress(@RequestBody AddressRequest address){
          return new ResponseEntity<>(workshopService.addAddress(address),HttpStatus.OK);
+     }
+     @GetMapping("/getAddress")
+     public ResponseEntity<WorkshopAddressResponse> getAddress(){
+         return new ResponseEntity<>(workshopService.getAddress(),HttpStatus.OK);
      }
 
     @GetMapping("/getBookingHistory")

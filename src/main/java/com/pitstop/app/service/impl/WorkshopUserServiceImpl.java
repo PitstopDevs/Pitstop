@@ -4,12 +4,10 @@ import com.pitstop.app.constants.VehicleType;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
 import com.pitstop.app.dto.*;
+import com.pitstop.app.exception.BusinessException;
 import com.pitstop.app.exception.UserAlreadyExistException;
 import com.pitstop.app.exception.ResourceNotFoundException;
-import com.pitstop.app.model.Address;
-import com.pitstop.app.model.CustomUserDetails;
-import com.pitstop.app.model.UserType;
-import com.pitstop.app.model.WorkshopUser;
+import com.pitstop.app.model.*;
 import com.pitstop.app.repository.WorkshopUserRepository;
 import com.pitstop.app.service.WorkshopService;
 import com.pitstop.app.utils.JwtUtil;
@@ -37,6 +35,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -110,29 +109,55 @@ public class WorkshopUserServiceImpl implements WorkshopService {
     }
 
     @Override
-    public String addAddress(AddressRequest address) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        WorkshopUser workshopUser = workshopUserRepository.findByUsername(username)
-                .orElseThrow(()-> new ResourceNotFoundException("Workshop not found"));
-        Address finalAddress = null;
+    public AddressResponse addAddress(AddressRequest request) {
+        String username = SecurityContextHolder
+                .getContext().getAuthentication().getName();
 
-        /* case 1 : if user provides coordinates (gps location)
-        only case 1 implemented
-        */
+        WorkshopUser user = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if(address.getLatitude() != null && address.getLongitude() != null){
-            AddressResponse addressResponse = findAddressFromCoordinates(address.getLatitude(),address.getLongitude());
+        Address finalAddress;
+
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+
+            AddressResponse geo = findAddressFromCoordinates(
+                    request.getLatitude(), request.getLongitude());
+
             finalAddress = Address.builder()
-                    .latitude(address.getLatitude())
-                    .longitude(address.getLongitude())
-                    .formattedAddress(addressResponse.getFormattedAddress())
+                    .id(UUID.randomUUID().toString())
+                    .latitude(request.getLatitude())
+                    .longitude(request.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
                     .build();
+
+        } else if (request.getFormattedAddress() != null) {
+
+            AddressResponse geo = findCoordinatesFromAddress(
+                    request.getFormattedAddress());
+
+            finalAddress = Address.builder()
+                    .id(UUID.randomUUID().toString())
+                    .latitude(geo.getLatitude())
+                    .longitude(geo.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
+                    .build();
+
+        } else {
+            throw new BusinessException("Invalid address data");
         }
-        workshopUser.setWorkshopAddress(finalAddress);
-        workshopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateWorkshopUserDetails(workshopUser);
-        return "Address added successfully";
+
+        user.setWorkshopAddress(finalAddress);
+        user.setAccountLastModifiedDateTime(LocalDateTime.now());
+
+        workshopUserRepository.save(user);
+
+        return new AddressResponse(
+                finalAddress.getId(),
+                finalAddress.getLatitude(),
+                finalAddress.getLongitude(),
+                finalAddress.getFormattedAddress(),
+                true // always default
+        );
     }
 
     public WorkshopUser getWorkshopUserByUsername(String username) {
@@ -289,7 +314,7 @@ public class WorkshopUserServiceImpl implements WorkshopService {
 
         updateWorkshopUserDetails(currentWorkshopUser);
 
-        return "AppUser Details updated successfully";
+        return "Workshop Details updated successfully";
     }
 
     @Override
@@ -545,5 +570,27 @@ public class WorkshopUserServiceImpl implements WorkshopService {
         log.info("Workshop : {} , closed successfully",username);
         return new WorkshopStatusResponse(currentWorkShopUser.getId(), currentWorkShopUser.getName(),
                 currentWorkShopUser.getUsername(),currentWorkShopUser.getCurrentWorkshopStatus(), currentWorkShopUser.getWorkshopAddress());
+    }
+
+    @Override
+    public WorkshopAddressResponse getAddress() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Address address = currentWorkShopUser.getWorkshopAddress();
+        if (address == null) {
+            return new WorkshopAddressResponse(false, null);
+        }
+        AddressResponse response = new AddressResponse(
+                address.getId(),
+                address.getLatitude(),
+                address.getLongitude(),
+                address.getFormattedAddress(),
+                address.isDefault()
+        );
+        return new WorkshopAddressResponse(true,response);
     }
 }
