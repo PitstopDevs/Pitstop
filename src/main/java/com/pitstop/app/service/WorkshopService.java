@@ -28,7 +28,7 @@ public interface WorkshopService {
     void addWorkshopServiceType(WorkshopServiceTypeRequest workshopServiceType);
     void addWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleType);
     void deleteWorkshopServiceType(WorkshopServiceTypeRequest workshopServiceTypeRequest);
-    void deleteWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleTypeRequest);
+    void deleteWorkshopVehicleType();
     List<WorkshopServiceType> getAllWorkshopServiceType();
     VehicleType getWorkshopSupportedVehicleType();
 

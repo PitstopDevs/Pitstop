@@ -4,6 +4,7 @@ import com.pitstop.app.dto.*;
 import com.pitstop.app.service.impl.BookingHistoryServiceImpl;
 import com.pitstop.app.service.impl.WorkshopUserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,6 +16,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/workshops")
 @RequiredArgsConstructor
+@Slf4j
 public class WorkshopController {
 
     private final WorkshopUserServiceImpl workshopService;
@@ -114,14 +116,12 @@ public class WorkshopController {
         }
     }
     @DeleteMapping("/removeVehicle")
-    public ResponseEntity<?> removeWorkshopVehicleType(@RequestBody WorkShopVehicleTypeRequest workshopVehicleTypeRequest) {
-        try{
-            workshopService.deleteWorkshopVehicleType(workshopVehicleTypeRequest);
-            return ResponseEntity.ok("WORKSHOP VEHICLE TYPE REMOVED SUCCESSFULLY");
-        }
-        catch (Exception e) {
-            throw new RuntimeException("FAILED TO REMOVE WORKSHOP VEHICLE TYPE" +HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+    public ResponseEntity<?> removeWorkshopVehicleType() {
+        log.info("DELETE /removeVehicle called");
+        workshopService.deleteWorkshopVehicleType();
+        return ResponseEntity.ok(
+                Map.of("message" , "All vehicle types removed successfully")
+        );
     }
     @GetMapping("/me/services")
     public ResponseEntity<?> getWorkshopServices(){

@@ -197,7 +197,7 @@ public class WorkshopUserServiceImplTest {
 
         WorkShopVehicleTypeRequest wsVehicleTypeRequest = new WorkShopVehicleTypeRequest();
         wsVehicleTypeRequest.setWorkshopVehicleType("TWO_WHEELER");
-        workshopUserService.deleteWorkshopVehicleType(wsVehicleTypeRequest);
+        workshopUserService.deleteWorkshopVehicleType();
         WorkshopUser updated = workshopUserRepository.findByUsername(workshopUser.getUsername()).orElseThrow();
         assertNull(updated.getVehicleTypeSupported());
     }

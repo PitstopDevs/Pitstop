@@ -462,31 +462,26 @@ public class WorkshopUserServiceImpl implements WorkshopService {
     }
 
     @Override
-    public void deleteWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleTypeRequest) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
+    public void deleteWorkshopVehicleType() {
 
-            WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
 
-            VehicleType vehicleType = parseWorkshopVehicleType(workshopVehicleTypeRequest);
-           if(currentWorkShopUser.getVehicleTypeSupported() == null){
-               log.warn("Workshop {} has no supported vehicle type added yet",username);
-               throw new RuntimeException("No vehicle type supported by workshop");
-           }
-           if(!currentWorkShopUser.getVehicleTypeSupported().equals(vehicleType)) {
-               log.warn("Workshop {} does not support this vehicle type",username);
-               throw new RuntimeException("Workshop does not support this vehicle type");
-           }
-           currentWorkShopUser.setVehicleTypeSupported(null);
-           currentWorkShopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-           updateWorkshopUserDetails(currentWorkShopUser);
-           log.info("Removed vehicle type {} from workshop {}", vehicleType, username);
-        } catch (Exception e) {
-            log.error("Unexpected error while deleting workshop vehicle type supported: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to delete workshop vehicle type supported");
+        log.info("Vehicle type removal requested by workshop [{}]", username);
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (currentWorkShopUser.getVehicleTypeSupported() == null) {
+            log.warn("Workshop [{}] has no vehicle type configured", username);
+            throw new RuntimeException("No vehicle type configured");
         }
+
+        currentWorkShopUser.setVehicleTypeSupported(null);
+        currentWorkShopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
+        workshopUserRepository.save(currentWorkShopUser);
+
+        log.info("All vehicle types removed for workshop [{}]", username);
     }
 
     @Override
