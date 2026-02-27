@@ -11,19 +11,21 @@ public interface AppUserService {
     AppUser getAppUserById(String id);
     AppUser getAppUserByUsername(String username);
     List<AppUser> getAllAppUser();
-    String addAddress(AddressRequest address);
+    AddressResponse addAddress(AddressRequest address);
 
-    String changeDefaultAddress(AddressRequest addressRequest);
+    String changeDefaultAddress(ChangeAddressRequest addressRequest);
 
     String updateAppUser(AppUserRequest appUserRequest);
 
     AppUserResponse getAppUserDetails();
 
-    ResponseEntity<?> changePassword(AppUserRequest appUserRequest);
+    void changePassword(ChangePasswordRequest changePasswordRequest);
 
     ResponseEntity<?>  deleteAppUser();
 
     PersonalInfoResponse getPersonalProfile();
 
     GetPriceResponse getPrice(GetPriceRequest request);
+
+    List<AddressResponse> getSavedAddress();
 }

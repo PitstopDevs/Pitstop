@@ -45,6 +45,7 @@ class WorkshopSearchServiceImplTest {
         workshopUserRepository.deleteByUsername("workshop3");
         appUserRepository.deleteByUsername("filter_test_user");
         Address defaultAddress = new Address(
+                "123",
                 22.6000,
                 88.4000,
                 "Kolkata",
@@ -70,7 +71,7 @@ class WorkshopSearchServiceImplTest {
         w1.setCurrentWorkshopStatus(WorkshopStatus.OPEN);
         w1.setVehicleTypeSupported(VehicleType.TWO_WHEELER);
         w1.setServicesOffered(new ArrayList<>(List.of(WorkshopServiceType.OIL_CHANGE)));
-        w1.setWorkshopAddress(new Address(22.6020, 88.4020, "Near Kolkata", true));
+        w1.setWorkshopAddress(new Address("123",22.6020, 88.4020, "Near Kolkata", true));
         workshopUserRepository.save(w1);
 
         WorkshopUser w2 = new WorkshopUser();
@@ -80,7 +81,7 @@ class WorkshopSearchServiceImplTest {
         w2.setCurrentWorkshopStatus(WorkshopStatus.OPEN);
         w2.setVehicleTypeSupported(VehicleType.TWO_WHEELER);
         w2.setServicesOffered(new ArrayList<>(List.of(WorkshopServiceType.TYRE_REPLACEMENT)));
-        w2.setWorkshopAddress(new Address(22.6500, 88.4500, "Far Away", true));
+        w2.setWorkshopAddress(new Address("123",22.6500, 88.4500, "Far Away", true));
         workshopUserRepository.save(w2);
 
         WorkshopUser w3 = new WorkshopUser();
@@ -90,7 +91,7 @@ class WorkshopSearchServiceImplTest {
         w3.setCurrentWorkshopStatus(WorkshopStatus.OPEN);
         w3.setVehicleTypeSupported(VehicleType.TWO_WHEELER);
         w3.setServicesOffered(new ArrayList<>(List.of(WorkshopServiceType.OIL_CHANGE)));
-        w3.setWorkshopAddress(new Address(22.8000, 88.3600, "Very Far", true));
+        w3.setWorkshopAddress(new Address("123",22.8000, 88.3600, "Very Far", true));
         workshopUserRepository.save(w3);
     }
     @Order(1)

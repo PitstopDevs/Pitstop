@@ -20,9 +20,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-@Slf4j
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
@@ -44,38 +44,28 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String token = header.substring(7);
 
-        String username;
         try {
-            username = jwtUtil.extractUsername(token);
-        } catch (Exception e) {
-            log.warn("Invalid JWT token: {}", e.getMessage());
-            filterChain.doFilter(request, response);
-            return;
-        }
+            String username = jwtUtil.extractUsername(token);
 
-        if (username != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (username != null &&
+                    SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            CustomUserDetails userDetails =
-                    (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+                CustomUserDetails userDetails =
+                        (CustomUserDetails) userDetailsService
+                                .loadUserByUsername(username);
 
-            if (jwtUtil.validateToken(token, userDetails.getUsername())) {
-                UsernamePasswordAuthenticationToken auth =
-                        new UsernamePasswordAuthenticationToken(
-                                userDetails,
-                                null,
-                                userDetails.getAuthorities()
-                        );
-
-                auth.setDetails(
-                        new WebAuthenticationDetailsSource().buildDetails(request)
-                );
-
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                log.debug("JWT authentication successful for username={}", username);
-            } else {
-                log.warn("JWT rejected for username={}", username);
+                if (jwtUtil.validateToken(token, username)) {
+                    UsernamePasswordAuthenticationToken auth =
+                            new UsernamePasswordAuthenticationToken(
+                                    userDetails,
+                                    null,
+                                    userDetails.getAuthorities()
+                            );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
+        } catch (Exception e) {
+            log.warn("JWT error: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

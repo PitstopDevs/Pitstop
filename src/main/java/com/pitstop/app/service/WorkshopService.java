@@ -13,13 +13,13 @@ public interface WorkshopService {
     WorkshopUser getWorkshopUserById(String id);
     List<WorkshopUser> getAllWorkshopUser();
 
-    String addAddress(AddressRequest address);
+    AddressResponse addAddress(AddressRequest address);
 
     WorkshopUserResponse getWorkshopUserDetails();
 
     String updateWorkshopUser(WorkshopUserRequest workshopUserRequest);
 
-    ResponseEntity<?> changePassword(WorkshopUserRequest workshopUserRequest);
+    void changePassword(ChangePasswordRequest workshopUserRequest);
 
     ResponseEntity<?> deleteAppUser();
 
@@ -28,7 +28,13 @@ public interface WorkshopService {
     void addWorkshopServiceType(WorkshopServiceTypeRequest workshopServiceType);
     void addWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleType);
     void deleteWorkshopServiceType(WorkshopServiceTypeRequest workshopServiceTypeRequest);
-    void deleteWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleTypeRequest);
+    void deleteWorkshopVehicleType();
     List<WorkshopServiceType> getAllWorkshopServiceType();
     VehicleType getWorkshopSupportedVehicleType();
+
+    WorkshopStatusResponse getWorkshopCurrentStatus();
+
+    WorkshopStatusResponse closeWorkshop();
+
+    WorkshopAddressResponse getAddress();
 }
