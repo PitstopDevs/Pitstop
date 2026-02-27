@@ -8,6 +8,7 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class Address {
+    private String id;
     private Double latitude;
     private Double longitude;
     private String formattedAddress;

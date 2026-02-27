@@ -3,6 +3,7 @@ package com.pitstop.app.service.impl;
 import com.pitstop.app.constants.VehicleType;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.dto.*;
+import com.pitstop.app.exception.BusinessException;
 import com.pitstop.app.exception.UserAlreadyExistException;
 import com.pitstop.app.exception.ResourceNotFoundException;
 import com.pitstop.app.model.*;
@@ -33,9 +34,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -118,95 +117,92 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     @Transactional
-    public String addAddress(AddressRequest address) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        AppUser appUser = appUserRepository.findByUsername(username)
-                .orElseThrow(()-> new ResourceNotFoundException("User not found"));
-        Address finalAddress = null;
+    public AddressResponse addAddress(AddressRequest request) {
 
-        // case 1 : if user provides coordinates (gps location)
-        if(address.getLatitude() != null && address.getLongitude() != null){
-            AddressResponse addressResponse = findAddressFromCoordinates(address.getLatitude(),address.getLongitude());
+        String username = SecurityContextHolder
+                .getContext().getAuthentication().getName();
+
+        AppUser user = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Address finalAddress;
+
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+            AddressResponse geo = findAddressFromCoordinates(
+                    request.getLatitude(), request.getLongitude());
+
             finalAddress = Address.builder()
-                    .latitude(address.getLatitude())
-                    .longitude(address.getLongitude())
-                    .formattedAddress(addressResponse.getFormattedAddress())
+                    .id(UUID.randomUUID().toString())
+                    .latitude(request.getLatitude())
+                    .longitude(request.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
                     .build();
-        }
+        } else if (request.getFormattedAddress() != null) {
+            AddressResponse geo = findCoordinatesFromAddress(request.getFormattedAddress());
 
-        //case 2 : if user provides plain text address
-
-        if (address.getFormattedAddress() != null){
-            AddressResponse addressResponse = findCoordinatesFromAddress(address.getFormattedAddress());
             finalAddress = Address.builder()
-                    .latitude(addressResponse.getLatitude())
-                    .longitude(addressResponse.getLongitude())
-                    .formattedAddress(address.getFormattedAddress())
+                    .id(UUID.randomUUID().toString())
+                    .latitude(geo.getLatitude())
+                    .longitude(geo.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
                     .build();
+        } else {
+            throw new BusinessException("Invalid address data");
         }
-        if(finalAddress != null){
-            if(appUser.getUserAddress().isEmpty()){
-                finalAddress.setDefault(true);
-            } else {
-                finalAddress.setDefault(false);
-            }
+
+        boolean exists = user.getUserAddress().stream()
+                .anyMatch(a -> a.getFormattedAddress()
+                        .equalsIgnoreCase(finalAddress.getFormattedAddress()));
+
+        if (exists) {
+            throw new BusinessException("Address already exists");
         }
-        appUser.getUserAddress().add(finalAddress);
-        appUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateAppUserDetails(appUser);
-        return "Address added successfully";
+
+        finalAddress.setDefault(user.getUserAddress().isEmpty());
+        user.getUserAddress().add(finalAddress);
+        user.setAccountLastModifiedDateTime(LocalDateTime.now());
+
+        appUserRepository.save(user);
+
+        return new AddressResponse(
+                finalAddress.getId(),
+                finalAddress.getLatitude(),
+                finalAddress.getLongitude(),
+                finalAddress.getFormattedAddress(),
+                finalAddress.isDefault()
+        );
     }
 
     @Override
-    public String changeDefaultAddress(AddressRequest addressRequest) {
+    public String changeDefaultAddress(ChangeAddressRequest addressRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
         AppUser appUser = appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+
         List<Address> addresses = appUser.getUserAddress();
-        if (addresses == null) addresses = new ArrayList<>();
 
-        // Mark all as non-default
-        addresses.forEach(addr -> addr.setDefault(false));
-
-        //Check if the address already exists
-        Optional<Address> existingAddressOpt = addresses.stream()
-                .filter(addr -> addr.getLatitude().equals(addressRequest.getLatitude())
-                        && addr.getLongitude().equals(addressRequest.getLongitude()))
-                .findFirst();
-
-        Address newDefault;
-
-        if (existingAddressOpt.isPresent()) {
-            // Existing address becomes default
-            newDefault = existingAddressOpt.get();
-            newDefault.setDefault(true);
-            // Remove and reinsert at index 0
-            addresses.remove(newDefault);
-            addresses.add(0, newDefault);
-        } else {
-            // Step 3: Create new address and set as default
-            AddressResponse addressResponse = findAddressFromCoordinates(
-                    addressRequest.getLatitude(),
-                    addressRequest.getLongitude()
-            );
-
-            newDefault = Address.builder()
-                    .latitude(addressRequest.getLatitude())
-                    .longitude(addressRequest.getLongitude())
-                    .formattedAddress(addressResponse.getFormattedAddress())
-                    .isDefault(true)
-                    .build();
-
-            // Add at the top of the list
-            addresses.add(0, newDefault);
+        if (addresses == null || addresses.isEmpty()) {
+            throw new BusinessException("No addresses found");
         }
 
-        // Step 4: Save and update timestamp
-        appUser.setUserAddress(addresses);
+        boolean found = false;
+
+        for (Address a : addresses) {
+            if (a.getId().equals(addressRequest.getId())) {
+                a.setDefault(true);
+                found = true;
+            } else {
+                a.setDefault(false);
+            }
+        }
+
+        if (!found) {
+            throw new BusinessException("Address not found");
+        }
+
         appUser.setAccountLastModifiedDateTime(LocalDateTime.now());
         appUserRepository.save(appUser);
 
@@ -352,23 +348,21 @@ public class AppUserServiceImpl implements AppUserService {
         return appUserResponse;
     }
     @Override
-    public ResponseEntity<?> changePassword(AppUserRequest appUserRequest) {
+    public void changePassword(ChangePasswordRequest changePasswordRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 
         AppUser currentAppUser = appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        String oldPassword = currentAppUser.getPassword();
-        String newPassword = appUserRequest.getPassword();
-        if(newPassword.equals(oldPassword)) {
-            return new ResponseEntity<>("Change Password cannot be same", HttpStatusCode.valueOf(500));
+        if(!passwordEncoder.matches(changePasswordRequest.getCurrentPassword(),currentAppUser.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect");
         }
-
-        currentAppUser.setPassword(newPassword);
-        currentAppUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateAppUserDetails(currentAppUser);
-        return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
+        if(passwordEncoder.matches(changePasswordRequest.getNewPassword(),currentAppUser.getPassword())){
+            throw new IllegalArgumentException("New password must be different");
+        }
+        currentAppUser.setPassword(passwordEncoder.encode(changePasswordRequest.getNewPassword()));
+        appUserRepository.save(currentAppUser);
     }
 
     @Override
@@ -454,6 +448,35 @@ public class AppUserServiceImpl implements AppUserService {
             throw new RuntimeException("Error while fetching price" + e.getMessage());
         }
     }
+
+    @Override
+    public List<AddressResponse> getSavedAddress() {
+
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        String username = authentication.getName();
+
+        AppUser appUser = appUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        List<Address> addresses = appUser.getUserAddress();
+
+        if (addresses == null || addresses.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return addresses.stream()
+                .map(addr -> new AddressResponse(
+                        addr.getId(),
+                        addr.getLatitude(),
+                        addr.getLongitude(),
+                        addr.getFormattedAddress(),
+                        addr.isDefault()
+                ))
+                .toList();
+    }
+
     private VehicleType parseWorkshopVehicleType(String workshopVehicleType) {
         try{
             return VehicleType.valueOf(workshopVehicleType.toUpperCase());

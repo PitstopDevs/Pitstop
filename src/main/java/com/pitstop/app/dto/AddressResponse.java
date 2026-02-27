@@ -8,7 +8,9 @@ import lombok.*;
 @NoArgsConstructor
 @Builder
 public class AddressResponse {
-    private double latitude;
-    private double longitude;
+    private String id;
+    private Double latitude;
+    private Double longitude;
     private String formattedAddress;
+    private boolean isDefault;
 }

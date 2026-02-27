@@ -4,12 +4,10 @@ import com.pitstop.app.constants.VehicleType;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
 import com.pitstop.app.dto.*;
+import com.pitstop.app.exception.BusinessException;
 import com.pitstop.app.exception.UserAlreadyExistException;
 import com.pitstop.app.exception.ResourceNotFoundException;
-import com.pitstop.app.model.Address;
-import com.pitstop.app.model.CustomUserDetails;
-import com.pitstop.app.model.UserType;
-import com.pitstop.app.model.WorkshopUser;
+import com.pitstop.app.model.*;
 import com.pitstop.app.repository.WorkshopUserRepository;
 import com.pitstop.app.service.WorkshopService;
 import com.pitstop.app.utils.JwtUtil;
@@ -23,7 +21,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -34,9 +31,9 @@ import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -110,29 +107,55 @@ public class WorkshopUserServiceImpl implements WorkshopService {
     }
 
     @Override
-    public String addAddress(AddressRequest address) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        WorkshopUser workshopUser = workshopUserRepository.findByUsername(username)
-                .orElseThrow(()-> new ResourceNotFoundException("Workshop not found"));
-        Address finalAddress = null;
+    public AddressResponse addAddress(AddressRequest request) {
+        String username = SecurityContextHolder
+                .getContext().getAuthentication().getName();
 
-        /* case 1 : if user provides coordinates (gps location)
-        only case 1 implemented
-        */
+        WorkshopUser user = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if(address.getLatitude() != null && address.getLongitude() != null){
-            AddressResponse addressResponse = findAddressFromCoordinates(address.getLatitude(),address.getLongitude());
+        Address finalAddress;
+
+        if (request.getLatitude() != null && request.getLongitude() != null) {
+
+            AddressResponse geo = findAddressFromCoordinates(
+                    request.getLatitude(), request.getLongitude());
+
             finalAddress = Address.builder()
-                    .latitude(address.getLatitude())
-                    .longitude(address.getLongitude())
-                    .formattedAddress(addressResponse.getFormattedAddress())
+                    .id(UUID.randomUUID().toString())
+                    .latitude(request.getLatitude())
+                    .longitude(request.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
                     .build();
+
+        } else if (request.getFormattedAddress() != null) {
+
+            AddressResponse geo = findCoordinatesFromAddress(
+                    request.getFormattedAddress());
+
+            finalAddress = Address.builder()
+                    .id(UUID.randomUUID().toString())
+                    .latitude(geo.getLatitude())
+                    .longitude(geo.getLongitude())
+                    .formattedAddress(geo.getFormattedAddress())
+                    .build();
+
+        } else {
+            throw new BusinessException("Invalid address data");
         }
-        workshopUser.setWorkshopAddress(finalAddress);
-        workshopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateWorkshopUserDetails(workshopUser);
-        return "Address added successfully";
+
+        user.setWorkshopAddress(finalAddress);
+        user.setAccountLastModifiedDateTime(LocalDateTime.now());
+
+        workshopUserRepository.save(user);
+
+        return new AddressResponse(
+                finalAddress.getId(),
+                finalAddress.getLatitude(),
+                finalAddress.getLongitude(),
+                finalAddress.getFormattedAddress(),
+                true // always default
+        );
     }
 
     public WorkshopUser getWorkshopUserByUsername(String username) {
@@ -144,9 +167,11 @@ public class WorkshopUserServiceImpl implements WorkshopService {
         WorkshopUser workshopUser = workshopUserRepository.findByUsername(username)
                 .orElseThrow(()-> new ResourceNotFoundException("Workshop not found with username : "+username));
 
+        log.info("Attempting to open workshop : {}",username);
         workshopUser.setCurrentWorkshopStatus(WorkshopStatus.OPEN);
         updateWorkshopUserDetails(workshopUser);
 
+        log.info("Workshop : {} , opened successfully",username);
         return new WorkshopStatusResponse(workshopUser.getId(), workshopUser.getName(),
                 workshopUser.getUsername(),workshopUser.getCurrentWorkshopStatus(), workshopUser.getWorkshopAddress());
     }
@@ -287,26 +312,24 @@ public class WorkshopUserServiceImpl implements WorkshopService {
 
         updateWorkshopUserDetails(currentWorkshopUser);
 
-        return "AppUser Details updated successfully";
+        return "Workshop Details updated successfully";
     }
 
     @Override
-    public ResponseEntity<?> changePassword(WorkshopUserRequest workshopUserRequest) {
+    public void changePassword(ChangePasswordRequest workshopUserRequest) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
         WorkshopUser currentWorkshopUser = workshopUserRepository.findByUsername(username)
                 .orElseThrow(()-> new ResourceNotFoundException("Workshop not found"));
 
-        String oldPassword = currentWorkshopUser.getPassword();
-        String newPassword = workshopUserRequest.getPassword();
-        if(newPassword.equals(oldPassword)) {
-            return new ResponseEntity<>("Change Password cannot be same", HttpStatusCode.valueOf(500));
+        if(!passwordEncoder.matches(workshopUserRequest.getCurrentPassword(),currentWorkshopUser.getPassword())) {
+            throw new IllegalArgumentException("Current password does not match");
         }
-
-        currentWorkshopUser.setPassword(newPassword);
-        currentWorkshopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-        updateWorkshopUserDetails(currentWorkshopUser);
-        return new ResponseEntity<>("Password changed successfully", HttpStatus.OK);
+        if(passwordEncoder.matches(workshopUserRequest.getNewPassword(),currentWorkshopUser.getPassword())) {
+            throw new IllegalArgumentException("New password and current password cannot be same");
+        }
+        currentWorkshopUser.setPassword(workshopUserRequest.getNewPassword());
+        workshopUserRepository.save(currentWorkshopUser);
     }
 
     @Override
@@ -439,31 +462,26 @@ public class WorkshopUserServiceImpl implements WorkshopService {
     }
 
     @Override
-    public void deleteWorkshopVehicleType(WorkShopVehicleTypeRequest workshopVehicleTypeRequest) {
-        try {
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
+    public void deleteWorkshopVehicleType() {
 
-            WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
-                    .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
 
-            VehicleType vehicleType = parseWorkshopVehicleType(workshopVehicleTypeRequest);
-           if(currentWorkShopUser.getVehicleTypeSupported() == null){
-               log.warn("Workshop {} has no supported vehicle type added yet",username);
-               throw new RuntimeException("No vehicle type supported by workshop");
-           }
-           if(!currentWorkShopUser.getVehicleTypeSupported().equals(vehicleType)) {
-               log.warn("Workshop {} does not support this vehicle type",username);
-               throw new RuntimeException("Workshop does not support this vehicle type");
-           }
-           currentWorkShopUser.setVehicleTypeSupported(null);
-           currentWorkShopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
-           updateWorkshopUserDetails(currentWorkShopUser);
-           log.info("Removed vehicle type {} from workshop {}", vehicleType, username);
-        } catch (Exception e) {
-            log.error("Unexpected error while deleting workshop vehicle type supported: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to delete workshop vehicle type supported");
+        log.info("Vehicle type removal requested by workshop [{}]", username);
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (currentWorkShopUser.getVehicleTypeSupported() == null) {
+            log.warn("Workshop [{}] has no vehicle type configured", username);
+            throw new RuntimeException("No vehicle type configured");
         }
+
+        currentWorkShopUser.setVehicleTypeSupported(null);
+        currentWorkShopUser.setAccountLastModifiedDateTime(LocalDateTime.now());
+        workshopUserRepository.save(currentWorkShopUser);
+
+        log.info("All vehicle types removed for workshop [{}]", username);
     }
 
     @Override
@@ -509,5 +527,61 @@ public class WorkshopUserServiceImpl implements WorkshopService {
             log.error("Unexpected error while fetching workshop vehicle type: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch workshop vehicle type");
         }
+    }
+
+    @Override
+    public WorkshopStatusResponse getWorkshopCurrentStatus() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return new WorkshopStatusResponse(
+                currentWorkShopUser.getId(),
+                currentWorkShopUser.getName(),
+                currentWorkShopUser.getUsername(),
+                currentWorkShopUser.getCurrentWorkshopStatus(),
+                currentWorkShopUser.getWorkshopAddress()
+        );
+    }
+
+    @Override
+    public WorkshopStatusResponse closeWorkshop() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        log.info("Attempting to close workshop : {}",username);
+        currentWorkShopUser.setCurrentWorkshopStatus(WorkshopStatus.CLOSED);
+        workshopUserRepository.save(currentWorkShopUser);
+
+        log.info("Workshop : {} , closed successfully",username);
+        return new WorkshopStatusResponse(currentWorkShopUser.getId(), currentWorkShopUser.getName(),
+                currentWorkShopUser.getUsername(),currentWorkShopUser.getCurrentWorkshopStatus(), currentWorkShopUser.getWorkshopAddress());
+    }
+
+    @Override
+    public WorkshopAddressResponse getAddress() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        WorkshopUser currentWorkShopUser = workshopUserRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Address address = currentWorkShopUser.getWorkshopAddress();
+        if (address == null) {
+            return new WorkshopAddressResponse(false, null);
+        }
+        AddressResponse response = new AddressResponse(
+                address.getId(),
+                address.getLatitude(),
+                address.getLongitude(),
+                address.getFormattedAddress(),
+                address.isDefault()
+        );
+        return new WorkshopAddressResponse(true,response);
     }
 }
