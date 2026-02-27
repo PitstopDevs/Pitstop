@@ -65,6 +65,8 @@ public class AppUserServiceImpl implements AppUserService {
 
     @Override
     public AppUserRegisterResponse saveAppUserDetails(AppUserRegisterRequest appUserRequest) {
+        appUserRequest.setUsername("user_"+appUserRequest.getUsername());
+
         //register new AppUsers
         boolean emailExists = appUserRepository.findByEmail(appUserRequest.getEmail()).isPresent();
         boolean usernameExists = appUserRepository.findByUsername(appUserRequest.getUsername()).isPresent();
@@ -209,6 +211,7 @@ public class AppUserServiceImpl implements AppUserService {
         return "Default address updated successfully";
     }
     public AppUserLoginResponse loginAppUser(AppUserLoginRequest req){
+        req.setUsername("user_" + req.getUsername());
         log.info("Login attempt for AppUser: {}", req.getUsername());
         try {
             manager.authenticate(
@@ -231,9 +234,9 @@ public class AppUserServiceImpl implements AppUserService {
         String token = jwtUtil.generateToken(user);
 
         log.info("AppUser {} logged in successfully", req.getUsername());
-
+        System.out.println(user.getUsername().substring(user.getUsername().indexOf('_') + 1));
         return new AppUserLoginResponse(
-                user.getUsername(),
+                user.getUsername().substring(user.getUsername().indexOf('_') + 1),
                 token,
                 "Login successful"
         );

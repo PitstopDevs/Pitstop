@@ -105,7 +105,8 @@ public class AdminUserServiceImpl implements AdminUserService {
     }
     public AdminUserRegisterResponse createAdmin(AdminUserRegisterRequest request) {
         try {
-            log.info("Creating a new admin user");
+            request.setUsername("admin_"+request.getUsername());
+            log.info("Creating a new admin user :: "+request.getUsername());
             boolean isEmailExists = adminUserRepository.findByEmail(request.getEmail()).isPresent();
             boolean isUsernameExists = adminUserRepository.findByUsername(request.getUsername()).isPresent();
 
@@ -137,6 +138,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         }
     }
     public AdminUserLoginResponse loginAdminUser(AdminUserLoginRequest req){
+        req.setUsername("admin_"+req.getUsername());
         log.info("Login attempt for Admin: {}", req.getUsername());
 
         // Step 1: Authenticate username/password
@@ -166,7 +168,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         log.info("Admin {} logged in successfully", req.getUsername());
 
         return new AdminUserLoginResponse(
-                user.getUsername(),
+                user.getUsername().substring(user.getUsername().indexOf('_') + 1),
                 token,
                 "Login successful"
         );
