@@ -99,10 +99,10 @@ public class AppUserServiceImplTest {
     @DisplayName("AppUser registering new Account")
     void saveAppUserDetailsTest(){
        appUserService.saveAppUserDetails(appUser);
-       AppUser found = appUserRepository.findByUsername("xxxx_xxxx_app_user").orElseThrow(() -> new AssertionError("AppUser was not saved"));
+       AppUser found = appUserRepository.findByUsername("user_xxxx_xxxx_app_user").orElseThrow(() -> new AssertionError("AppUser was not saved"));
 
        assertEquals("AppUser Test Sample Name",found.getName());
-       assertEquals("xxxx_xxxx_app_user",found.getUsername());
+       assertEquals("user_xxxx_xxxx_app_user",found.getUsername());
        assertEquals("xxxx_xxxx_app_user@xyz.com",found.getEmail());
        assertTrue(passwordEncoder.matches("123456789", found.getPassword()));
     }
@@ -260,6 +260,6 @@ public class AppUserServiceImplTest {
     @AfterAll
     public void tearDownAll() {
         SecurityContextHolder.clearContext();
-        appUserRepository.deleteByUsername("xxxx_xxxx_app_user");
+        appUserRepository.deleteByUsername("user_xxxx_xxxx_app_user");
     }
 }

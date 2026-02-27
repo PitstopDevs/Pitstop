@@ -65,6 +65,8 @@ public class WorkshopUserServiceImpl implements WorkshopService {
 
     @Override
     public WorkshopUserRegisterResponse saveWorkshopUserDetails(WorkshopUserRegisterRequest workshopUserRequest) {
+        workshopUserRequest.setUsername("workshop_"+workshopUserRequest.getUsername());
+
         boolean existsByUsername = workshopUserRepository.findByUsername(workshopUserRequest.getUsername()).isPresent();
         boolean existsByEmail = workshopUserRepository.findByEmail(workshopUserRequest.getEmail()).isPresent();
 
@@ -151,8 +153,8 @@ public class WorkshopUserServiceImpl implements WorkshopService {
                 workshopUser.getUsername(),workshopUser.getCurrentWorkshopStatus(), workshopUser.getWorkshopAddress());
     }
     public WorkshopLoginResponse loginWorkshopUser(WorkshopLoginRequest req){
+        req.setUsername("workshop_" + req.getUsername());
         log.info("Login attempt for WorkshopUser: {}", req.getUsername());
-
         try {
             manager.authenticate(
                     new UsernamePasswordAuthenticationToken(req.getUsername(), req.getPassword())
@@ -174,9 +176,9 @@ public class WorkshopUserServiceImpl implements WorkshopService {
         String token = jwtUtil.generateToken(user);
 
         log.info("WorkshopUser {} logged in successfully", req.getUsername());
-
+        System.out.println(user.getUsername().substring(user.getUsername().indexOf('_') + 1));
         return new WorkshopLoginResponse(
-                user.getUsername(),
+                user.getUsername().substring(user.getUsername().indexOf('_') + 1),
                 token,
                 "Login successful"
         );

@@ -49,11 +49,11 @@ public class WorkshopUserServiceImplTest {
     void saveWorkshopUserDetailsTest() {
         workshopUserService.saveWorkshopUserDetails(workshopUser);
 
-        WorkshopUser found = workshopUserRepository.findByUsername("xxxx_xxxx_workshop_user")
+        WorkshopUser found = workshopUserRepository.findByUsername("workshop_xxxx_xxxx_workshop_user")
                 .orElseThrow(() -> new AssertionError("WorkshopUser was not saved"));
 
         assertEquals("Workshop Test Sample Name", found.getName());
-        assertEquals("xxxx_xxxx_workshop_user", found.getUsername());
+        assertEquals("workshop_xxxx_xxxx_workshop_user", found.getUsername());
         assertEquals("xxxx_xxxx_workshop_user@xyz.com", found.getEmail());
         assertTrue(passwordEncoder.matches("123456789", found.getPassword()));
     }
@@ -158,7 +158,7 @@ public class WorkshopUserServiceImplTest {
         WorkshopServiceTypeRequest serviceType = new WorkshopServiceTypeRequest();
         serviceType.setWorkshopServiceType("OIL_CHANGE");
         workshopUserService.deleteWorkshopServiceType(serviceType);
-        WorkshopUser updated = workshopUserRepository.findByUsername(workshopUser.getUsername()).orElseThrow();
+        WorkshopUser updated = workshopUserRepository.findByUsername( workshopUser.getUsername()).orElseThrow();
         assertFalse(updated.getServicesOffered().contains(WorkshopServiceType.OIL_CHANGE));
     }
     @Order(9)
@@ -239,6 +239,6 @@ public class WorkshopUserServiceImplTest {
     @AfterAll
     public void tearDownAll() {
         SecurityContextHolder.clearContext();
-        workshopUserRepository.deleteByUsername("xxxx_xxxx_workshop_user");
+        workshopUserRepository.deleteByUsername("workshop_xxxx_xxxx_workshop_user");
     }
 }
