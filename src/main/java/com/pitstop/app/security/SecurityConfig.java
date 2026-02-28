@@ -3,6 +3,7 @@ package com.pitstop.app.security;
 import com.pitstop.app.filter.JwtFilter;
 import com.pitstop.app.service.impl.UserDetailsServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,6 +33,8 @@ public class SecurityConfig {
 
     private final UserDetailsServiceImpl userDetailsService;
     private final JwtFilter jwtFilter;
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -59,6 +62,7 @@ public class SecurityConfig {
 
                         // ----- Protected Endpoints -----
                         .requestMatchers("/api/workshops/filterWorkshops").hasRole("USER")
+                        .requestMatchers("/api/workshops/available-services").hasRole("USER")
                         .requestMatchers("/api/users/**").hasRole("USER")
                         .requestMatchers("/api/workshops/**").hasRole("WORKSHOP")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
@@ -102,7 +106,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
 
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://127.0.0.1:5500/"));
+        configuration.setAllowedOrigins(List.of(allowedOrigins));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
