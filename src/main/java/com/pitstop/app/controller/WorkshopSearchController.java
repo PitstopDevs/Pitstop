@@ -1,14 +1,13 @@
 package com.pitstop.app.controller;
 
+import com.pitstop.app.constants.VehicleType;
+import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.dto.WorkshopUserFilterRequest;
 import com.pitstop.app.dto.WorkshopUserFilterResponse;
 import com.pitstop.app.service.impl.WorkshopSearchServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -27,5 +26,9 @@ public class WorkshopSearchController {
         catch(Exception e){
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+    @GetMapping("/available-services")
+    public ResponseEntity<List<WorkshopServiceType>> getAvailableServices(@RequestParam VehicleType vehicleType) {
+        return ResponseEntity.ok(workshopSearchService.getAvailableServices(vehicleType));
     }
 }

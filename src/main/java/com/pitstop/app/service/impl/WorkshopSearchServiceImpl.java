@@ -7,10 +7,9 @@ import com.pitstop.app.dto.PricingRuleResponse;
 import com.pitstop.app.dto.WorkshopUserFilterRequest;
 import com.pitstop.app.dto.WorkshopUserFilterResponse;
 import com.pitstop.app.exception.ResourceNotFoundException;
-import com.pitstop.app.model.Address;
-import com.pitstop.app.model.AppUser;
-import com.pitstop.app.model.WorkshopUser;
+import com.pitstop.app.model.*;
 import com.pitstop.app.repository.AppUserRepository;
+import com.pitstop.app.repository.PricingRuleRepository;
 import com.pitstop.app.repository.WorkshopUserRepository;
 import com.pitstop.app.service.WorkshopSearchService;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +19,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -30,6 +30,7 @@ public class WorkshopSearchServiceImpl implements WorkshopSearchService {
     private final AppUserRepository appUserRepository;
     private final WorkshopUserRepository workshopUserRepository;
     private final AdminPricingServiceImpl adminPricingService;
+    private final PricingRuleRepository pricingRuleRepository;
 
     @Override
     public List<WorkshopUserFilterResponse> filterWorkshopUsers(WorkshopUserFilterRequest workshopUserRequest) {
@@ -129,6 +130,53 @@ public class WorkshopSearchServiceImpl implements WorkshopSearchService {
             throw new RuntimeException("Failed to search workshops.");
         }
     }
+
+    @Override
+    public List<WorkshopServiceType> getAvailableServices(VehicleType vehicleType) {
+       log.info("Fetching available services for vehicle type : {}",vehicleType);
+
+       List<VehicleType> searchTypes = new ArrayList<>();
+       searchTypes.add(VehicleType.BOTH);
+
+       if(vehicleType == VehicleType.TWO_WHEELER) {
+           searchTypes.add(VehicleType.TWO_WHEELER);
+       } else if (vehicleType == VehicleType.FOUR_WHEELER) {
+           searchTypes.add(VehicleType.FOUR_WHEELER);
+       }
+
+       log.info("Searching pricing rule for vehicle types : {}" , searchTypes);
+
+       List<PricingRule> rules = pricingRuleRepository.findByVehicleTypeIn(searchTypes);
+
+       if(rules.isEmpty()) {
+           log.warn("No pricing rule found for vehicle type : {} (including BOTH)",vehicleType);
+           return Collections.emptyList();
+       }
+
+       log.info("Found {} pricing rule(s) matching the search types", rules.size());
+
+       rules.forEach( rule ->
+               log.debug("Rule -> VehicleType : {} , Service : {} , Amount {} , Premium Amount {}",
+                       rule.getVehicleType(),
+                       rule.getServiceType(),
+                       rule.getAmount(),
+                       rule.getPremiumAmount())
+               );
+
+       List<WorkshopServiceType> services = rules.stream()
+               .map(PricingRule::getServiceType)
+               .distinct()
+               .toList();
+
+        log.info("Returning {} available service(s) for vehicle type: {} -> {}",
+                services.size(),
+                vehicleType,
+                services
+        );
+
+        return services;
+    }
+
     private VehicleType parseWorkshopVehicleType(String workshopVehicleType) {
         try{
             return VehicleType.valueOf(workshopVehicleType.toUpperCase());
