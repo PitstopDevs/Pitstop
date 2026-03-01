@@ -17,4 +17,5 @@ public class WorkshopUserFilterResponse {
     private Double latitude;
     private Double longitude;
     private Double price;
+    private Boolean premiumWorkshop;
 }
