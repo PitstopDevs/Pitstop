@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/booking")
@@ -33,7 +34,7 @@ public class BookingController {
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>(bookingId, HttpStatus.OK);
+        return ResponseEntity.ok(Map.of("bookingId", bookingId));
     }
 
     // Role should be APP_USER
