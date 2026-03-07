@@ -169,4 +169,9 @@ public class BookingController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
+    @GetMapping("/active")
+    public ResponseEntity<?> getActiveBookingForAppUser() {
+        List<BookingResponse> responses = bookingService.getActiveBookingsForAppUser();
+        return ResponseEntity.ok(responses);
+    }
 }

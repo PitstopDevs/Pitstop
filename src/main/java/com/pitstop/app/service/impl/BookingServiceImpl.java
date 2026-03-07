@@ -5,6 +5,7 @@ import com.pitstop.app.constants.PaymentStatus;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
 import com.pitstop.app.dto.*;
+import com.pitstop.app.exception.ResourceNotFoundException;
 import com.pitstop.app.model.*;
 import com.pitstop.app.repository.BookingRepository;
 import com.pitstop.app.repository.VehicleRepository;
@@ -492,5 +493,34 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.save(booking);
         workshopUserService.updateWorkshopUserDetails(workShopUser);
+    }
+    @Override
+    public List<BookingResponse> getActiveBookingsForAppUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        AppUser currentAppUser = appUserService.getAppUserByUsername(username);
+
+        log.info("Returning list of active bookings for user {}",username);
+
+        List<BookingResponse> responses =  currentAppUser.getBookingHistory()
+                .stream()
+                .filter(b -> isActiveBooking(b.getCurrentStatus()))
+                .map(b->checkBookingStatus(b.getId()))
+                .toList();
+
+        if(responses.isEmpty()) {
+            log.debug("User {} does not have any active bookings returning empty list",username);
+            throw new ResourceNotFoundException("Active booking list is empty");
+        }
+        log.info("{} active bookings found for user {}",responses.size(),username);
+        log.info("List of active bookings returned successfully");
+        return responses;
+    }
+    public boolean isActiveBooking(BookingStatus status) {
+        return status == BookingStatus.STARTED
+                || status == BookingStatus.BOOKED
+                || status == BookingStatus.ON_THE_WAY
+                || status == BookingStatus.WAITING
+                || status == BookingStatus.REPAIRING;
     }
 }
