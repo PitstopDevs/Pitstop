@@ -107,7 +107,7 @@ public class BookingServiceImpl implements BookingService {
         if(workshopUser.isPremiumWorkshop())
             amount += priceRule.getPremiumAmount();
 
-        Booking booking = bookingRepository.save(new Booking(amount, v.get(), currentAppUser.getId()));
+        Booking booking = bookingRepository.save(new Booking(amount, v.get(), currentAppUser.getId(),workshopUser.getId(),serviceType));
 
         currentAppUser.getBookingHistory().add(booking);
         workshopUser.getBookingHistory().add(booking);
@@ -139,13 +139,14 @@ public class BookingServiceImpl implements BookingService {
                     new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                             currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                null, null, null,currentBooking.getCurrentPaymentStatus());
+                null, null, null,currentBooking.getCurrentPaymentStatus(), currentBooking.getAppUserId(), currentBooking.getServiceType());
 
         else
             return new BookingResponse(currentBooking.getId(), currentBooking.getAmount(), new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                     currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                     currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                    currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus());
+                    currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
+                    currentBooking.getAppUserId(), currentBooking.getServiceType());
     }
 
     public List<BookingResponse> getStartedBookings() {
@@ -158,11 +159,33 @@ public class BookingServiceImpl implements BookingService {
         List<BookingResponse> startedBookings = new ArrayList<>();
         for(Booking currentBooking : allBookings) {
             if(currentBooking.getCurrentStatus() == BookingStatus.STARTED) {
-                startedBookings.add(new BookingResponse(currentBooking.getId(), currentBooking.getAmount(), new VehicleDetailsResponse(currentBooking.getVehicle().getId(),
-                        currentBooking.getVehicle().getVehicleType(),
-                        currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
-                        currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                        null, null, null,currentBooking.getCurrentPaymentStatus()));
+
+               Vehicle vehicle = currentBooking.getVehicle();
+
+               VehicleDetailsResponse vehicleResponse = new VehicleDetailsResponse(
+                       vehicle.getId(),
+                       vehicle.getVehicleType(),
+                       vehicle.getBrand(),
+                       vehicle.getModel(),
+                       vehicle.getEngineCapacity()
+               );
+               AppUser customer = appUserService.getAppUserById(currentBooking.getAppUserId());
+
+              startedBookings.add(new BookingResponse(
+                       currentBooking.getId(),
+                       currentBooking.getAmount(),
+                       vehicleResponse,
+                       currentBooking.getCurrentStatus(),
+                       currentBooking.getBookingStartedTime(),
+                       currentBooking.getBookingCompletedTime(),
+                       currentBooking.getWorkshopUserId(),
+                       currentBooking.getWorkShopName(),
+                       currentBooking.getWorkShopAddress(),
+                       currentBooking.getCurrentPaymentStatus(),
+                       customer.getName(),
+                       currentBooking.getServiceType()
+               )
+              );
             }
         }
         return startedBookings;
@@ -198,7 +221,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType());
     }
 
     public BookingResponse rejectBooking(String bookingId) {
@@ -228,7 +252,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType());
     }
 
     public BookingResponse startJourney(String bookingId) {
@@ -258,7 +283,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType());
     }
 
     public BookingStatusResponse generateBookingOtp(String bookingId) {

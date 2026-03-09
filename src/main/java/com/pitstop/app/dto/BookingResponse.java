@@ -2,6 +2,7 @@ package com.pitstop.app.dto;
 
 import com.pitstop.app.constants.BookingStatus;
 import com.pitstop.app.constants.PaymentStatus;
+import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.model.Address;
 import com.pitstop.app.model.Vehicle;
 import lombok.AllArgsConstructor;
@@ -22,4 +23,7 @@ public class BookingResponse {
     private String workShopName;
     private Address workShopAddress;
     private PaymentStatus paymentStatus;
+
+    private String customerName;
+    private WorkshopServiceType serviceType;
 }
