@@ -549,4 +549,43 @@ public class BookingServiceImpl implements BookingService {
                 || status == BookingStatus.WAITING
                 || status == BookingStatus.REPAIRING;
     }
+    @Override
+    public BookingResponse viewBookingDetails(String bookingId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        WorkshopUser workshopUser = workshopUserService.getWorkshopUserByUsername(username);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!workshopUser.getBookingHistory().stream().anyMatch(b->b.getId().equals(bookingId))) {
+            log.error("Booking with id {} does not belong to workshop {}",bookingId,username);
+            throw new RuntimeException("Booking does not belong to this workshop");
+        }
+        Vehicle vehicle = booking.getVehicle();
+        VehicleDetailsResponse vehicleDetails =
+                new VehicleDetailsResponse(
+                        vehicle.getId(),
+                        vehicle.getVehicleType(),
+                        vehicle.getBrand(),
+                        vehicle.getModel(),
+                        vehicle.getEngineCapacity()
+                );
+
+        AppUser customer = appUserService.getAppUserById(booking.getAppUserId());
+
+        return new BookingResponse(
+                booking.getId(),
+                booking.getAmount(),
+                vehicleDetails,
+                booking.getCurrentStatus(),
+                booking.getBookingStartedTime(),
+                booking.getBookingCompletedTime(),
+                booking.getWorkshopUserId(),
+                booking.getWorkShopName(),
+                booking.getWorkShopAddress(),
+                booking.getCurrentPaymentStatus(),
+                customer.getUsername().replace("user_",""),
+                booking.getServiceType()
+        );
+    }
 }

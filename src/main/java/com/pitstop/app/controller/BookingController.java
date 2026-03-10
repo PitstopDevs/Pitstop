@@ -174,4 +174,9 @@ public class BookingController {
         List<BookingResponse> responses = bookingService.getActiveBookingsForAppUser();
         return ResponseEntity.ok(responses);
     }
+    @GetMapping("/view/{bookingId}")
+    public ResponseEntity<?> viewBookingDetailsForWorkshopUser(@PathVariable String bookingId) {
+        BookingResponse response = bookingService.viewBookingDetails(bookingId);
+        return ResponseEntity.ok(response);
+    }
 }

@@ -11,4 +11,6 @@ public interface BookingService {
     List<Booking> getAllBookings();
     void deleteBooking(String id);
     List<BookingResponse> getActiveBookingsForAppUser();
+
+    BookingResponse viewBookingDetails(String bookingId);
 }
