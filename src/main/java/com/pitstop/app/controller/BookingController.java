@@ -169,7 +169,7 @@ public class BookingController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
-    @GetMapping("/active")
+    @GetMapping("/appUser/active")
     public ResponseEntity<?> getActiveBookingForAppUser() {
         List<BookingResponse> responses = bookingService.getActiveBookingsForAppUser();
         return ResponseEntity.ok(responses);
@@ -178,5 +178,10 @@ public class BookingController {
     public ResponseEntity<?> viewBookingDetailsForWorkshopUser(@PathVariable String bookingId) {
         BookingResponse response = bookingService.viewBookingDetails(bookingId);
         return ResponseEntity.ok(response);
+    }
+    @GetMapping("/workshopUser/active")
+    public ResponseEntity<?> getActiveBookingForWorkshopUser() {
+        List<BookingResponse> responses = bookingService.getActiveBookingsForWorkshop();
+        return ResponseEntity.ok(responses);
     }
 }

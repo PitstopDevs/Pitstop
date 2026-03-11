@@ -13,4 +13,6 @@ public interface BookingService {
     List<BookingResponse> getActiveBookingsForAppUser();
 
     BookingResponse viewBookingDetails(String bookingId);
+
+    List<BookingResponse> getActiveBookingsForWorkshop();
 }

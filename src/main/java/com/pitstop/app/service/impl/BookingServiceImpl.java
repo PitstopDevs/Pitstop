@@ -588,4 +588,53 @@ public class BookingServiceImpl implements BookingService {
                 booking.getServiceType()
         );
     }
+
+    @Override
+    public List<BookingResponse> getActiveBookingsForWorkshop() {
+        log.info("Get Active booking for Workshop User called");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        WorkshopUser workshopUser = workshopUserService.getWorkshopUserByUsername(username);
+
+        log.info("Returning list of active bookings for user {}",username);
+
+        List<BookingResponse> activeBookings = new ArrayList<>();
+
+        for (Booking currentBooking : workshopUser.getBookingHistory()) {
+            BookingStatus status = currentBooking.getCurrentStatus();
+            if (status == BookingStatus.STARTED
+                    || status == BookingStatus.BOOKED
+                    || status == BookingStatus.ON_THE_WAY
+                    || status == BookingStatus.WAITING
+                    || status == BookingStatus.REPAIRING) {
+                Vehicle vehicle = currentBooking.getVehicle();
+                VehicleDetailsResponse vehicleDetails =
+                        new VehicleDetailsResponse(
+                                vehicle.getId(),
+                                vehicle.getVehicleType(),
+                                vehicle.getBrand(),
+                                vehicle.getModel(),
+                                vehicle.getEngineCapacity()
+                        );
+                AppUser customer = appUserService.getAppUserById(currentBooking.getAppUserId());
+                activeBookings.add(
+                        new BookingResponse(
+                                currentBooking.getId(),
+                                currentBooking.getAmount(),
+                                vehicleDetails,
+                                currentBooking.getCurrentStatus(),
+                                currentBooking.getBookingStartedTime(),
+                                currentBooking.getBookingCompletedTime(),
+                                currentBooking.getWorkshopUserId(),
+                                currentBooking.getWorkShopName(),
+                                currentBooking.getWorkShopAddress(),
+                                currentBooking.getCurrentPaymentStatus(),
+                                customer.getUsername().replace("user_",""),
+                                currentBooking.getServiceType()
+                        )
+                );
+            }
+        }
+        return activeBookings;
+    }
 }
