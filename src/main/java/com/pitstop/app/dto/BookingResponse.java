@@ -26,4 +26,7 @@ public class BookingResponse {
 
     private String customerName;
     private WorkshopServiceType serviceType;
+
+    private String otp;
+    private LocalDateTime otpExpiry;
 }

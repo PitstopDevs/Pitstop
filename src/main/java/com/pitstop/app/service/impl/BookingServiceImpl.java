@@ -139,14 +139,15 @@ public class BookingServiceImpl implements BookingService {
                     new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                             currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                null, null, null,currentBooking.getCurrentPaymentStatus(), currentBooking.getAppUserId(), currentBooking.getServiceType());
+                null, null, null,currentBooking.getCurrentPaymentStatus(), currentBooking.getAppUserId(), currentBooking.getServiceType(),
+                    currentBooking.getOtp(),currentBooking.getOtpExpiry());
 
         else
             return new BookingResponse(currentBooking.getId(), currentBooking.getAmount(), new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                     currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                     currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
                     currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
-                    currentBooking.getAppUserId(), currentBooking.getServiceType());
+                    currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public List<BookingResponse> getStartedBookings() {
@@ -183,7 +184,9 @@ public class BookingServiceImpl implements BookingService {
                        currentBooking.getWorkShopAddress(),
                        currentBooking.getCurrentPaymentStatus(),
                        customer.getName(),
-                       currentBooking.getServiceType()
+                       currentBooking.getServiceType(),
+                       currentBooking.getOtp(),
+                       currentBooking.getOtpExpiry()
                )
               );
             }
@@ -222,7 +225,7 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
                 currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
-                currentBooking.getAppUserId(), currentBooking.getServiceType());
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingResponse rejectBooking(String bookingId) {
@@ -253,7 +256,7 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
                 currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
-                currentBooking.getAppUserId(), currentBooking.getServiceType());
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingResponse startJourney(String bookingId) {
@@ -284,7 +287,7 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
                 currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
-                currentBooking.getAppUserId(), currentBooking.getServiceType());
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingStatusResponse generateBookingOtp(String bookingId) {
@@ -300,6 +303,11 @@ public class BookingServiceImpl implements BookingService {
 
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+
+        if(booking.getOtp() != null && booking.getOtpExpiry().isAfter(LocalDateTime.now())) {
+            throw new RuntimeException("OTP already generated and its valid");
+        }
 
 
         String otp = otpService.generateOtp();
@@ -585,7 +593,9 @@ public class BookingServiceImpl implements BookingService {
                 booking.getWorkShopAddress(),
                 booking.getCurrentPaymentStatus(),
                 customer.getUsername().replace("user_",""),
-                booking.getServiceType()
+                booking.getServiceType(),
+                booking.getOtp(),
+                booking.getOtpExpiry()
         );
     }
 
@@ -630,7 +640,9 @@ public class BookingServiceImpl implements BookingService {
                                 currentBooking.getWorkShopAddress(),
                                 currentBooking.getCurrentPaymentStatus(),
                                 customer.getUsername().replace("user_",""),
-                                currentBooking.getServiceType()
+                                currentBooking.getServiceType(),
+                                currentBooking.getOtp(),
+                                currentBooking.getOtpExpiry()
                         )
                 );
             }
