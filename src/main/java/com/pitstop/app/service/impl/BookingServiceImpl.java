@@ -635,6 +635,8 @@ public class BookingServiceImpl implements BookingService {
                 );
             }
         }
+        log.info("{} active bookings found for workshop {}",activeBookings.size(),username);
+        log.info("List of active bookings returned successfully");
         return activeBookings;
     }
 }
