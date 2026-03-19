@@ -305,11 +305,6 @@ public class BookingServiceImpl implements BookingService {
                 .orElseThrow(() -> new RuntimeException("Booking not found"));
 
 
-        if(booking.getOtp() != null && booking.getOtpExpiry().isAfter(LocalDateTime.now())) {
-            throw new RuntimeException("OTP already generated and its valid");
-        }
-
-
         String otp = otpService.generateOtp();
         LocalDateTime expiry = otpService.getExpiryTime();
 
