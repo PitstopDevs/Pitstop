@@ -5,6 +5,7 @@ import com.pitstop.app.constants.PaymentStatus;
 import com.pitstop.app.constants.WorkshopServiceType;
 import com.pitstop.app.constants.WorkshopStatus;
 import com.pitstop.app.dto.*;
+import com.pitstop.app.exception.ResourceNotFoundException;
 import com.pitstop.app.model.*;
 import com.pitstop.app.repository.BookingRepository;
 import com.pitstop.app.repository.VehicleRepository;
@@ -106,7 +107,7 @@ public class BookingServiceImpl implements BookingService {
         if(workshopUser.isPremiumWorkshop())
             amount += priceRule.getPremiumAmount();
 
-        Booking booking = bookingRepository.save(new Booking(amount, v.get(), currentAppUser.getId()));
+        Booking booking = bookingRepository.save(new Booking(amount, v.get(), currentAppUser.getId(),workshopUser.getId(),serviceType));
 
         currentAppUser.getBookingHistory().add(booking);
         workshopUser.getBookingHistory().add(booking);
@@ -138,13 +139,15 @@ public class BookingServiceImpl implements BookingService {
                     new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                             currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                null, null, null,currentBooking.getCurrentPaymentStatus());
+                null, null, null,currentBooking.getCurrentPaymentStatus(), currentBooking.getAppUserId(), currentBooking.getServiceType(),
+                    currentBooking.getOtp(),currentBooking.getOtpExpiry());
 
         else
             return new BookingResponse(currentBooking.getId(), currentBooking.getAmount(), new VehicleDetailsResponse(currentBooking.getVehicle().getId(), currentBooking.getVehicle().getVehicleType(),
                     currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                     currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                    currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus());
+                    currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
+                    currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public List<BookingResponse> getStartedBookings() {
@@ -157,11 +160,35 @@ public class BookingServiceImpl implements BookingService {
         List<BookingResponse> startedBookings = new ArrayList<>();
         for(Booking currentBooking : allBookings) {
             if(currentBooking.getCurrentStatus() == BookingStatus.STARTED) {
-                startedBookings.add(new BookingResponse(currentBooking.getId(), currentBooking.getAmount(), new VehicleDetailsResponse(currentBooking.getVehicle().getId(),
-                        currentBooking.getVehicle().getVehicleType(),
-                        currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
-                        currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                        null, null, null,currentBooking.getCurrentPaymentStatus()));
+
+               Vehicle vehicle = currentBooking.getVehicle();
+
+               VehicleDetailsResponse vehicleResponse = new VehicleDetailsResponse(
+                       vehicle.getId(),
+                       vehicle.getVehicleType(),
+                       vehicle.getBrand(),
+                       vehicle.getModel(),
+                       vehicle.getEngineCapacity()
+               );
+               AppUser customer = appUserService.getAppUserById(currentBooking.getAppUserId());
+
+              startedBookings.add(new BookingResponse(
+                       currentBooking.getId(),
+                       currentBooking.getAmount(),
+                       vehicleResponse,
+                       currentBooking.getCurrentStatus(),
+                       currentBooking.getBookingStartedTime(),
+                       currentBooking.getBookingCompletedTime(),
+                       currentBooking.getWorkshopUserId(),
+                       currentBooking.getWorkShopName(),
+                       currentBooking.getWorkShopAddress(),
+                       currentBooking.getCurrentPaymentStatus(),
+                       customer.getName(),
+                       currentBooking.getServiceType(),
+                       currentBooking.getOtp(),
+                       currentBooking.getOtpExpiry()
+               )
+              );
             }
         }
         return startedBookings;
@@ -197,7 +224,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingResponse rejectBooking(String bookingId) {
@@ -227,7 +255,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentWorkShopUser.getName(), currentWorkShopUser.getWorkshopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingResponse startJourney(String bookingId) {
@@ -257,7 +286,8 @@ public class BookingServiceImpl implements BookingService {
                 currentBooking.getVehicle().getVehicleType(),
                 currentBooking.getVehicle().getBrand(), currentBooking.getVehicle().getModel(), currentBooking.getVehicle().getEngineCapacity()),
                 currentBooking.getCurrentStatus(), currentBooking.getBookingStartedTime(), currentBooking.getBookingCompletedTime(),
-                currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus());
+                currentBooking.getWorkshopUserId(), currentBooking.getWorkShopName(), currentBooking.getWorkShopAddress(),currentBooking.getCurrentPaymentStatus(),
+                currentBooking.getAppUserId(), currentBooking.getServiceType(),currentBooking.getOtp(),currentBooking.getOtpExpiry());
     }
 
     public BookingStatusResponse generateBookingOtp(String bookingId) {
@@ -492,5 +522,128 @@ public class BookingServiceImpl implements BookingService {
         }
         bookingRepository.save(booking);
         workshopUserService.updateWorkshopUserDetails(workShopUser);
+    }
+    @Override
+    public List<BookingResponse> getActiveBookingsForAppUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        AppUser currentAppUser = appUserService.getAppUserByUsername(username);
+
+        log.info("Returning list of active bookings for user {}",username);
+
+        List<BookingResponse> responses =  currentAppUser.getBookingHistory()
+                .stream()
+                .filter(b -> isActiveBooking(b.getCurrentStatus()))
+                .map(b->checkBookingStatus(b.getId()))
+                .toList();
+
+        if(responses.isEmpty()) {
+            log.debug("User {} does not have any active bookings returning empty list",username);
+            throw new ResourceNotFoundException("Active booking list is empty");
+        }
+        log.info("{} active bookings found for user {}",responses.size(),username);
+        log.info("List of active bookings returned successfully");
+        return responses;
+    }
+    public boolean isActiveBooking(BookingStatus status) {
+        return status == BookingStatus.STARTED
+                || status == BookingStatus.BOOKED
+                || status == BookingStatus.ON_THE_WAY
+                || status == BookingStatus.WAITING
+                || status == BookingStatus.REPAIRING;
+    }
+    @Override
+    public BookingResponse viewBookingDetails(String bookingId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        WorkshopUser workshopUser = workshopUserService.getWorkshopUserByUsername(username);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        if (!workshopUser.getBookingHistory().stream().anyMatch(b->b.getId().equals(bookingId))) {
+            log.error("Booking with id {} does not belong to workshop {}",bookingId,username);
+            throw new RuntimeException("Booking does not belong to this workshop");
+        }
+        Vehicle vehicle = booking.getVehicle();
+        VehicleDetailsResponse vehicleDetails =
+                new VehicleDetailsResponse(
+                        vehicle.getId(),
+                        vehicle.getVehicleType(),
+                        vehicle.getBrand(),
+                        vehicle.getModel(),
+                        vehicle.getEngineCapacity()
+                );
+
+        AppUser customer = appUserService.getAppUserById(booking.getAppUserId());
+
+        return new BookingResponse(
+                booking.getId(),
+                booking.getAmount(),
+                vehicleDetails,
+                booking.getCurrentStatus(),
+                booking.getBookingStartedTime(),
+                booking.getBookingCompletedTime(),
+                booking.getWorkshopUserId(),
+                booking.getWorkShopName(),
+                booking.getWorkShopAddress(),
+                booking.getCurrentPaymentStatus(),
+                customer.getUsername().replace("user_",""),
+                booking.getServiceType(),
+                booking.getOtp(),
+                booking.getOtpExpiry()
+        );
+    }
+
+    @Override
+    public List<BookingResponse> getActiveBookingsForWorkshop() {
+        log.info("Get Active booking for Workshop User called");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+        WorkshopUser workshopUser = workshopUserService.getWorkshopUserByUsername(username);
+
+        log.info("Returning list of active bookings for user {}",username);
+
+        List<BookingResponse> activeBookings = new ArrayList<>();
+
+        for (Booking currentBooking : workshopUser.getBookingHistory()) {
+            BookingStatus status = currentBooking.getCurrentStatus();
+            if (status == BookingStatus.STARTED
+                    || status == BookingStatus.BOOKED
+                    || status == BookingStatus.ON_THE_WAY
+                    || status == BookingStatus.WAITING
+                    || status == BookingStatus.REPAIRING) {
+                Vehicle vehicle = currentBooking.getVehicle();
+                VehicleDetailsResponse vehicleDetails =
+                        new VehicleDetailsResponse(
+                                vehicle.getId(),
+                                vehicle.getVehicleType(),
+                                vehicle.getBrand(),
+                                vehicle.getModel(),
+                                vehicle.getEngineCapacity()
+                        );
+                AppUser customer = appUserService.getAppUserById(currentBooking.getAppUserId());
+                activeBookings.add(
+                        new BookingResponse(
+                                currentBooking.getId(),
+                                currentBooking.getAmount(),
+                                vehicleDetails,
+                                currentBooking.getCurrentStatus(),
+                                currentBooking.getBookingStartedTime(),
+                                currentBooking.getBookingCompletedTime(),
+                                currentBooking.getWorkshopUserId(),
+                                currentBooking.getWorkShopName(),
+                                currentBooking.getWorkShopAddress(),
+                                currentBooking.getCurrentPaymentStatus(),
+                                customer.getUsername().replace("user_",""),
+                                currentBooking.getServiceType(),
+                                currentBooking.getOtp(),
+                                currentBooking.getOtpExpiry()
+                        )
+                );
+            }
+        }
+        log.info("{} active bookings found for workshop {}",activeBookings.size(),username);
+        log.info("List of active bookings returned successfully");
+        return activeBookings;
     }
 }

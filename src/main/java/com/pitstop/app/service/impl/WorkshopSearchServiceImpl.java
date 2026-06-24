@@ -111,6 +111,7 @@ public class WorkshopSearchServiceImpl implements WorkshopSearchService {
                 response.setFormattedAddress(workshopUser.getWorkshopAddress().getFormattedAddress());
                 response.setLatitude(workshopUser.getWorkshopAddress().getLatitude());
                 response.setLongitude(workshopUser.getWorkshopAddress().getLongitude());
+                response.setPremiumWorkshop(workshopUser.isPremiumWorkshop());
                 PricingRuleResponse pricingRuleByVehicleTypeAndServiceType = adminPricingService.getPricingRuleByVehicleTypeAndServiceType(requestedVehicleType, requestedServiceType);
                 if(workshopUser.isPremiumWorkshop())
                     response.setPrice(pricingRuleByVehicleTypeAndServiceType.getAmount() + pricingRuleByVehicleTypeAndServiceType.getPremiumAmount());

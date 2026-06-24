@@ -2,9 +2,8 @@ package com.pitstop.app.model;
 
 import com.pitstop.app.constants.BookingStatus;
 import com.pitstop.app.constants.PaymentStatus;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import com.pitstop.app.constants.WorkshopServiceType;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -53,11 +52,15 @@ public class Booking {
     List<BookingStatusWithTimeStamp> bookingStatusHistory;
     Boolean appUserEligibleForRefund = null;
 
-    public Booking(double amount, Vehicle vehicle, String appUserId) {
+    private WorkshopServiceType serviceType;
+
+    public Booking(double amount, Vehicle vehicle, String appUserId,String workshopUserId,WorkshopServiceType serviceType) {
         this.amount = amount;
         this.vehicle = vehicle;
         this.appUserId = appUserId;
         this.bookingStatusHistory = new ArrayList<>();
         bookingStatusHistory.add(new BookingStatusWithTimeStamp(currentStatus, LocalDateTime.now()));
+        this.workshopUserId = workshopUserId;
+        this.serviceType = serviceType;
     }
 }

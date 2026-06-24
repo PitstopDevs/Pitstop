@@ -236,7 +236,7 @@ public class AppUserServiceImplTest {
 
         GetPriceRequest request = new GetPriceRequest();
         request.setVehicleType("FOUR_WHEELER");
-        request.setServiceType("AC_REPAIR");
+        request.setServiceType("TYRE_REPAIRING");
 
         assertThrows(RuntimeException.class, () ->
                 appUserService.getPrice(request));

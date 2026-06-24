@@ -57,7 +57,9 @@ public class PaymentServiceImpl implements PaymentService {
             throw new BusinessException("Payment can only be initiated when booking is BOOKED or ON THE WAY.");
         }
 
-
+        if (booking.getCurrentPaymentStatus() == PaymentStatus.PAID) {
+            throw new BusinessException("Booking already paid.");
+        }
 
         log.info("Initiating payment for bookingId={} with currentStatus={}",
                 bookingId, booking.getCurrentStatus());
@@ -132,34 +134,56 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public void verifyAndUpdatePayment(PaymentVerifyRequest paymentVerifyRequest) {
-        Payment payment = paymentRepository.findByGatewayOrderId(paymentVerifyRequest.getGatewayOrderId())
-                .orElseThrow(() -> new ResourceNotFoundException("Payment not found for order " + paymentVerifyRequest.getGatewayOrderId()));
+    public void verifyAndUpdatePayment(PaymentVerifyRequest request) {
+
+        Payment payment = paymentRepository
+                .findByGatewayOrderId(request.getGatewayOrderId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Payment not found for order " + request.getGatewayOrderId()
+                        ));
+
+        // Prevent duplicate processing
+        if (payment.getPaymentStatus() == PaymentStatus.SUCCESS) {
+            return;
+        }
 
         boolean validSignature = razorpaySignatureVerifier.isSignatureValid(
-                paymentVerifyRequest.getGatewayOrderId(),
-                paymentVerifyRequest.getGatewayPaymentId(),
-                paymentVerifyRequest.getGatewaySignature()
+                request.getGatewayOrderId(),
+                request.getGatewayPaymentId(),
+                request.getGatewaySignature()
         );
-        if(!validSignature) {
+
+        if (!validSignature) {
+
             payment.setPaymentStatus(PaymentStatus.FAILED);
-            payment.setGatewayPaymentId(paymentVerifyRequest.getGatewayPaymentId());
-            payment.setGatewaySignature(paymentVerifyRequest.getGatewaySignature());
+            payment.setGatewayPaymentId(request.getGatewayPaymentId());
+            payment.setGatewaySignature(request.getGatewaySignature());
             payment.setStatusUpdatedAt(Instant.now());
+
             paymentRepository.save(payment);
 
             throw new BusinessException("Invalid Razorpay signature. Payment tampering detected.");
         }
+
+        // Mark payment successful
         payment.setPaymentStatus(PaymentStatus.SUCCESS);
-        payment.setGatewayPaymentId(paymentVerifyRequest.getGatewayPaymentId());
-        payment.setGatewaySignature(paymentVerifyRequest.getGatewaySignature());
+        payment.setGatewayPaymentId(request.getGatewayPaymentId());
+        payment.setGatewaySignature(request.getGatewaySignature());
         payment.setStatusUpdatedAt(Instant.now());
 
+        paymentRepository.save(payment);
+
+        // Update booking payment status
         Booking booking = bookingRepository.findById(payment.getBookingId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Booking not found for id: " + payment.getBookingId()));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Booking not found for id: " + payment.getBookingId()
+                        ));
+
         booking.setCurrentPaymentStatus(PaymentStatus.PAID);
+
         bookingRepository.save(booking);
 
-        paymentRepository.save(payment);
     }
 }

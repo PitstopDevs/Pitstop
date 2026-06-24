@@ -505,14 +505,23 @@ public class AppUserServiceImpl implements AppUserService {
     }
 
     private void validateWorkshopSupport(WorkshopUser workshop, GetPriceRequest request) {
-        WorkshopServiceType st =  parseWorkshopServiceType(request.getServiceType());
+
+        WorkshopServiceType st = parseWorkshopServiceType(request.getServiceType());
+
         if (!workshop.getServicesOffered().contains(st)) {
             log.error("Workshop service type {} does not exist", st);
             throw new RuntimeException("Workshop does not support this service");
         }
-        VehicleType vt = parseWorkshopVehicleType(request.getVehicleType());
-        if (!workshop.getVehicleTypeSupported().equals(vt)) {
-            log.error("Workshop does not support this vehicle type {}", vt);
+
+        VehicleType requested = parseWorkshopVehicleType(request.getVehicleType());
+        VehicleType supported = workshop.getVehicleTypeSupported();
+
+        boolean supportsVehicle =
+                supported == VehicleType.BOTH ||
+                        supported == requested;
+
+        if (!supportsVehicle) {
+            log.error("Workshop does not support vehicle type {} (supports {})", requested, supported);
             throw new RuntimeException("Workshop does not support this vehicle type");
         }
     }
